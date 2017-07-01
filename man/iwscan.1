@@ -1,0 +1,330 @@
+'\" t
+.\"     Title: iwscan
+.\"    Author: Jean Tourrilhes <jt@hpl.hp.com>
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 07/01/2017
+.\"    Manual: iwscan
+.\"    Source: iwscan
+.\"  Language: English
+.\"
+.TH "IWSCAN" "1" "07/01/2017" "iwscan" "iwscan"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+iwscan \- Scan for wireless networks and output results in XML format
+.SH "SYNOPSIS"
+.HP \w'\fBiwscan\fR\ 'u
+\fBiwscan\fR [\fIINTERFACE\fR|all\ [essid\ \fIESSID\fR]\ [last]\ [to\ \fIFILE\fR]]
+.SH "DESCRIPTION"
+.PP
+Program
+\fBiwscan\fR
+may be used to perform scanning for wireless networks, moslty like
+\fBiwlist scan\fR
+(to be clear,
+\fBiwscan\fR
+exactly based on the code of
+\fBiwlist\fR)\&. Main difference is output format: while
+\fBiwlist\fR
+uses human\-readable format,
+\fBiwscan\fR
+formats output into XML and intended primarily to be called from scripts\&.
+.SH "PARAMETERS"
+.PP
+Possible command line parameters:
+.PP
+\fIINTERFACE\fR
+.RS 4
+Name of wireless network interface to scan, e\&.g\&.
+wlan0\&. If you invoke
+\fBiwscan\fR
+without any arguments, it will try to scan on all available network interfaces\&. If you want to scan all intefaces, but also you add other parameters, e\&.g\&.
+\fBlast\fR, you need to explicitly specify
+\fBall\fR
+as the first parameter\&.
+.RE
+.PP
+\fBessid \fR\fB\fIESSID\fR\fR
+.RS 4
+This option is used to specify a scan on a specific ESSID\&. With some card/driver, this enables to see hidden networks\&. But usually, it does nothing\&.
+\fIDo not assume\fR
+that in general case it allow to restrict output to a specific network\&.
+.sp
+This option is inherited from code of
+\fBiwlist scan\fR
+"as is"\&. Responsible for its work is only the kernel driver of you wireless card\&.
+.RE
+.PP
+\fBlast\fR
+.RS 4
+With this options,
+\fBiwscan\fR
+does not trigger a scan, and only tries to read left\-over scan results\&.
+.sp
+This option is also inherited from code of
+\fBiwlist scan\fR
+"as is"\&.
+.RE
+.PP
+\fBto \fR\fB\fIFILE\fR\fR
+.RS 4
+Output results of scan into a
+\fIFILE\fR
+instead of console\&. If
+\fIFILE\fR
+already exists, it will be removed and filled with only results of last scan\&.
+.sp
+Note that if
+\fIFILE\fR
+is FIFO (special file usually created with
+\fBmkfifo\fR) and nobody now reads it,
+\fBiwscan\fR
+will hangs until someone opens this file for reading\&. After that, it will perform scan, output results into file, and exit\&. This behavior is due to the specifics of FIFO\&.
+.RE
+.SH "OUTPUT FORMAT"
+.PP
+Names of XML tag is mostly self\-descriptive\&. Complete machine\-readable description of syntax is described in
+iwscan\&.xsd, distributed in set with
+\fBiwscan\fR\&. You can validate the syntax of
+\fBiwscan\fR
+output by command like that:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xmllint \-\-nonet \-\-noout \-\-schema /path/to/iwscan\&.xsd \fIFILE\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+(usually
+iwscan\&.xsd
+is located in place like
+/usr/share/iwscan/
+or so, depending of your install
+\fIPREFIX\fR)\&.
+.PP
+Some additional notes:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+If you runs
+\fBiwscan\fR
+for specified interface, e\&.g\&.
+\fBiwscan wlan0\fR, root element of XML will be "<Interface>" tag\&. Otherwise, i\&.e\&. you run
+\fBiwscan all\fR
+or
+\fBiwscand\fR, root element will be "<Scan>" (which are container for "<Interface>" tags)\&. Both have timestamps, but
+<Interface>
+also has additional attributes, such as error flag ("failed") and error text ("error"), and also duration of a scan\&. Keep it in mind when processing their output\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Some tags may repeats two or more times\&. Especially worth noting "<Channel>" (tag with simple content, usually duplicates itself) and "<BitRates>" (tag with complex content, usually each contains only a part of the full list)\&. It is due to specific of
+\fBiwscan\fR, whis simply reads and decodes reply from the kernel in stream manner\&.
+.sp
+If it makes problem for you, please conider using of XSLT template
+iwscan\-group\-same\&.xslt, which is distributed in set with
+\fBiwscan\fR\&. Command will look like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xsltproc \-\-nonet \-o \fIOUTFILE\fR /path/to/iwscan\-group\-same\&.xslt \fIINFILE\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+(usually
+iwscan\-group\-same\&.xslt
+is located in place like
+/usr/share/iwscan/
+or so, depending of your install
+\fIPREFIX\fR)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+
+\fBiwscan\fR
+knows and decodes only those IEs (informational extensions) that are known to
+\fBiwlist\fR\&. For now, version of
+\fBiwlist\fR
+that are used as basic, 30\-pre9, released in 2009, and knows only two IEs:
+0xdd
+(WPA1) and
+0x30
+(WPA2)\&. All other IEs will be printed "as is", in special "<IE>" tags (each byte presented by two hexadecimal digits)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Some tags have "strange" attributes like "<Frequency fixed=\*(Aq\&.\&.\&.\*(Aq>" or "<Quality updated=\*(Aq\&.\&.\&.\*(Aq>"\&. Such attributes does not have explicit analogue in
+\fBiwlist scan\fR
+output\&. However, sentences like "Frequency:2\&.457 GHz" or "Quality=19/70" includes separator that have special means: ":" corresponds to false (0) value of "strange" attribute, while "=" corresponds to "true" (1) value of this attribute\&.
+.RE
+.SH "TYPICAL ERRORS"
+.PP
+Firstly, let\*(Aqs look at the error thar occur at
+\fBiwscan\fR
+startup, before the scan begins\&. Such errors are printed into
+stderr
+without any XML formatting\&. After such errors,
+\fBiwscan\fR
+immediately exits with non\-zero exit code\&.
+.PP
+iwscan: too few arguments for scanning option [to], iwscan: too few arguments for scanning option [essid]
+.RS 4
+If you specify options like
+\fBto\fR
+or
+\fBessid\fR, do not forget to give them corresponding argument, i\&.e\&.
+\fIFILE\fR
+or
+\fIESSID\fR
+respectively\&.
+.RE
+.PP
+iwscan: cannot open output file
+.RS 4
+Usually there is a problem with permissions\&. Check your credentials (you must have write access to catalog in which you want to place output file)\&. Check is file system mounted read\-only\&.
+.RE
+.PP
+iwscan: cannot open IW socket
+.RS 4
+Check is wireless networking and wireless extensions enabled in your kernel (CONFIG_WLAN,
+CONFIG_WEXT_*
+and so)\&.
+.RE
+.PP
+There we consider only errors that occurs during preparing to scan\&. Errors that may occur
+\fIduring scan process\fR, described in
+\fBiwscan-xml-format\fR(7), as they are printed in XML format\&.
+.SH "EXAMPLES"
+.PP
+Try to scan on all interfaces and print results to stdout:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+iwscan
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Try to scan on interface
+wlan0
+and print results to stdout:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+iwscan wlan0
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Try to scan on interface
+wlan0
+and print results to file
+dump\&.xml:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+iwscan wlan0 to dump\&.xml
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Try to scan on all interfaces and print results to file
+dump\&.xml:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+iwscan all to dump\&.xml
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+.PP
+
+\fBiwscand\fR(1),
+\fBiwscan-xml-format\fR(7),
+\fBiwlist\fR(8),
+\fBiwspy\fR(8),
+\fBiwevent\fR(8),
+\fBiwpriv\fR(8),
+\fBiw\fR(8),
+\fBwireless\fR(7)
+.SH "AUTHORS"
+.PP
+\fBJean Tourrilhes\fR <\&jt@hpl\&.hp\&.com\&>
+.RS 4
+developer of wireless\-tools
+.RE
+.PP
+\fBNathan Hoad\fR <\&nathan@getoffmalawn\&.com\&>
+.RS 4
+developer of wireless\-tools
+.RE
+.PP
+\fBSergey Ptashnick\fR <\&0comffdiz@inbox\&.ru\&>
+.RS 4
+developer of iwscan
+.RE

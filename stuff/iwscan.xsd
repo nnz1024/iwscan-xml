@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Scan" type="ScanType"/>
+	<xs:element name="Interface" type="InterfaceType"/>
+	<xs:complexType name="ScanType">
+		<xs:sequence>
+			<xs:element name="Interface" type="InterfaceType"
+				minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="failed" type="xs:boolean"/>
+		<xs:attribute name="error" type="xs:string"/>
+		<xs:attribute name="stamp" type="xs:dateTime"/>
+	</xs:complexType>
+	<xs:complexType name="InterfaceType">
+		<xs:sequence>
+			<xs:element name="AP" minOccurs="0" 
+				maxOccurs="unbounded" type="APType"/>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string"/>
+		<xs:attribute name="failed" type="xs:boolean"/>
+		<xs:attribute name="error" type="xs:string"/>
+		<xs:attribute name="stamp" type="xs:dateTime"/>
+		<xs:attribute name="duration" type="xs:duration"/>
+	</xs:complexType>
+	<xs:complexType name="APType">
+		<xs:choice maxOccurs="unbounded">
+			<xs:element name="Address" type="xs:string"/>
+			<xs:element name="Channel" type="xs:positiveInteger"/>
+			<xs:element name="Frequency" type="FrequencyType"/>
+			<xs:element name="Quality" type="QualityType"/>
+			<xs:element name="SignalLevel" type="SignalLevelType"/>
+			<xs:element name="EncryptionKey" 
+				type="EncryptionKeyType"/>
+			<xs:element name="ESSID" type="ESSIDType"/>
+			<xs:element name="BitRates" type="BitRatesType"/>
+			<xs:element name="Mode" type="ModeType"/>
+			<xs:element name="Extra" type="xs:string" minOccurs="0"/>
+			<xs:element name="IE" type="xs:string" minOccurs="0"/>
+			<xs:element name="WPA" type="WPAType" minOccurs="0"/>
+			<xs:element name="UnknownCommand" type="xs:string" 
+				minOccurs="0"/>
+		</xs:choice>
+		<xs:attribute name="cell" type="xs:positiveInteger"/>
+	</xs:complexType>
+	<xs:complexType name="FrequencyType">
+		<xs:simpleContent>
+			<xs:extension base="xs:decimal">
+				<xs:attribute name="fixed" type="xs:boolean"/>
+				<xs:attribute name="unit" type="xs:string"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="QualityType">
+		<xs:simpleContent>
+			<xs:extension base="xs:positiveInteger">
+				<xs:attribute name="updated" type="xs:boolean"/>
+				<xs:attribute name="max" 
+				type="xs:positiveInteger"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="SignalLevelType">
+		<xs:simpleContent>
+			<xs:extension base="xs:decimal">
+				<xs:attribute name="updated" type="xs:boolean"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="EncryptionKeyType">
+		<xs:sequence>
+			<xs:element name="Key" type="xs:string" minOccurs="0"/>
+			<xs:element name="EncodeIndex" type="xs:positiveInteger"
+				minOccurs="0"/>
+			<xs:element name="SecurityMode" type="SecurityModeType"
+				minOccurs="0"/>
+		</xs:sequence>	
+		<xs:attribute name="enabled" type="xs:boolean"/>
+	</xs:complexType>
+	<xs:simpleType name="SecurityModeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="restricted"/>
+			<xs:enumeration value="open"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="ESSIDType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="flags" 
+					type="xs:positiveInteger"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="BitRatesType">
+		<xs:sequence>
+			<xs:element name="BitRate" type="BitRateType" 
+				maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="BitRateType">
+		<xs:simpleContent>
+			<xs:extension base="xs:decimal">
+				<xs:attribute name="unit" type="xs:string"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="ModeType">
+		<xs:restriction base="xs:string">
+			<!-- Not all values are possible for AP's, but let's 
+				enumerate them all for completeness -->
+			<xs:enumeration value="Auto"/>
+			<xs:enumeration value="Ad-Hoc"/>
+			<xs:enumeration value="Managed"/>
+			<xs:enumeration value="Master"/>
+			<xs:enumeration value="Repeater"/>
+			<xs:enumeration value="Secondary"/>
+			<xs:enumeration value="Monitor"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="WPAType">
+		<xs:sequence>
+			<xs:element name="GroupCiphers" 
+				type="GroupCiphersType"	minOccurs="0"/>
+			<xs:element name="PairwiseCiphers" 
+				type="PairwiseCiphersType" minOccurs="0"/>
+			<xs:element name="AuthenticationSuites"
+			type="AuthenticationSuitesType" minOccurs="0"/>
+			<xs:element name="Preauthentication"
+			type="PreauthenticationType" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute name="version" type="xs:positiveInteger"/>
+		<xs:attribute name="type" type="xs:positiveInteger"/>
+	</xs:complexType>
+	<xs:complexType name="GroupCiphersType">
+		<xs:sequence>
+			<xs:element name="Cipher" type="CipherType" 
+				minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="count" type="xs:positiveInteger"/>
+	</xs:complexType>
+	<xs:complexType name="PairwiseCiphersType">
+		<xs:sequence>
+			<xs:element name="Cipher" type="CipherType" 
+				minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="count" type="xs:positiveInteger"/>
+	</xs:complexType>
+	<xs:complexType name="AuthenticationSuitesType">
+		<xs:sequence>
+			<xs:element name="AuthenticationSuite" 
+				type="AuthenticationSuiteType" minOccurs="0" 
+				maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="count" type="xs:positiveInteger"/>
+	</xs:complexType>
+	<xs:complexType name="PreauthenticationType">
+		<xs:attribute name="supported" type="xs:boolean"/>
+	</xs:complexType>
+	<xs:complexType name="CipherType">
+		<xs:simpleContent>
+			<xs:extension base="CypherTypeSimple">
+				<xs:attribute name="value" 
+					type="xs:positiveInteger"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="CypherTypeSimple">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="none"/>
+			<xs:enumeration value="WEP-40"/>
+			<xs:enumeration value="TKIP"/>
+			<xs:enumeration value="WRAP"/>
+			<xs:enumeration value="CCMP"/>
+			<xs:enumeration value="WEP-104"/>
+			<xs:enumeration value="Proprietary"/>
+			<xs:enumeration value="Unkown"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="AuthenticationSuiteType">
+		<xs:simpleContent>
+			<xs:extension base="AuthenticationSuiteTypeSimple">
+				<xs:attribute name="value" 
+					type="xs:positiveInteger"/>
+			</xs:extension>
+		</xs:simpleContent>		
+	</xs:complexType>
+	<xs:simpleType name="AuthenticationSuiteTypeSimple">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="none"/>
+			<xs:enumeration value="802.1x"/>
+			<xs:enumeration value="PSK"/>
+			<xs:enumeration value="Proprietary"/>
+			<xs:enumeration value="Unknown"/>			
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

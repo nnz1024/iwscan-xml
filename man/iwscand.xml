@@ -1,0 +1,432 @@
+<?xml version='1.0'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<refentry xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <refentryinfo>
+    <title>iwscand</title>
+    <productname>iwscan</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>developer of wireless-tools</contrib>
+        <firstname>Jean</firstname>
+        <surname>Tourrilhes</surname>
+        <email>jt@hpl.hp.com</email>
+      </author>
+      <author>
+        <contrib>developer of wireless-tools</contrib>
+        <firstname>Nathan</firstname>
+        <surname>Hoad</surname>
+        <email>nathan@getoffmalawn.com</email>
+      </author>
+      <author>
+        <contrib>developer of iwscan</contrib>
+        <firstname>Sergey</firstname>
+        <surname>Ptashnick</surname>
+        <email>0comffdiz@inbox.ru</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refname>iwscand</refname>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>iwscand</refname>
+    <refpurpose>Daemon which scans for wireless networks and outputs
+      XML-formatted results into given file/FIFO</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>iwscan</command>
+      <arg choice="plain"><replaceable>INTERFACE</replaceable></arg>
+      <arg choice="plain">to <replaceable>FILE</replaceable></arg>
+      <arg choice="opt">safe|nonblock</arg>
+      <arg choice="opt">essid <replaceable>ESSID</replaceable></arg>
+      <arg choice="opt">pid 
+        <arg choice="opt"><replaceable>PIDFILE</replaceable></arg>
+      </arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>
+      Daemon <command>iwscand</command> works in background and waits for
+      signals. When it recieves <varname>SIGUSR1</varname>, it performs scan
+      for wireless networks and output results in XML format (see
+      <citerefentry>
+        <refentrytitle>iwscan-xml-format</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>) into given file or FIFO. Scanning
+      functionality is mostly same as in 
+      <citerefentry>
+        <refentrytitle>iwscan</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>, but you can scan only one interface by each daemon process.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Parameters</title>
+
+    <para>Possible command line parameters:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><replaceable>INTERFACE</replaceable></term>
+
+        <listitem>
+          <para>
+            Name of wireless network interface to scan, e.g.
+            <literal>wlan0</literal>. In contrast to <command>iwscan</command>,
+            this argument is mandatory, and you cannot specify
+            <option>all</option> as interface name. Each
+            <command>iwscand</command> must scan only one interface. If you
+            want to scan multiple interfaces, you need to start corresponding
+            number of <command>iwscand</command> processes with proper
+            arguments.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>to <replaceable>FILE</replaceable></option></term>
+
+        <listitem>
+          <para>
+            Output results of scan into a <replaceable>FILE</replaceable>.
+            This argument is mandatory.
+          </para>
+ 
+          <para>
+            Note that if <replaceable>FILE</replaceable> is FIFO (special file
+            usually created with <command>mkfifo</command>), nobody now reads
+            it, and option <option>nonblock</option> not specified,
+            <command>iwscand</command> will hangs and will not forks until
+            someone opens this file for reading. After that, it will continue
+            initialization and detach from console.
+          </para>
+
+          <para>
+            On the other hand, if <replaceable>FILE</replaceable> is FIFO,
+            nobody now reads it, and option <option>nonblock</option> is
+            specified, <command>iwscand</command> will immediately fail with
+            error
+            <literal>iwscand: cannot open output file: No such device or address</literal>.
+            This is due to specific of nonblocking input/output.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>safe</option></term>
+
+        <listitem>
+          <para>
+            Remove old <replaceable>FILE</replaceable> (if it exists) before
+            creating new one at the daemon starting stage. This can partially
+            protect you from symlink attack, when you run
+            <command>iwscand</command> with root privileges. Within the such
+            attack, some bad guy can create <replaceable>FILE</replaceable> as
+            symlink pointing to certain root-only writable file, expecting that
+            <command>iwscand</command> overwite it with scan results.  Removing
+            <replaceable>FILE</replaceable> just before opening decreases
+            attack window to very small time window, but do not eliminate it
+            completely. So be careful even with this option, and try to avoid
+            world-writeable locations like <filename>/tmp</filename> as place
+            for <replaceable>FILE</replaceable> when run
+            <command>iwscand</command> under root privileges.
+          </para>
+
+          <para>
+            This option is mutually exclusive with
+            <option>nonblock</option>, which expects that file must already
+            exists and opened for reading by some other program.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>nonblock</option></term>
+
+        <listitem>
+          <para>
+            Open file <replaceable>FILE</replaceable> in non-blocking mode.
+            This may have mean primarily for FIFOs. Note that reader must
+            open FIFO for read <emphasis>before</emphasis> starting of
+            <command>iwscand</command>. Otherwise, later will fail with the
+            error
+            <literal>iwscand: cannot open output file: No such device or address</literal>.
+            This is due to specific of nonblocking input/output. 
+          </para>
+          <para>
+            This option is mutually exclusive with
+            <option>safe</option>, which remove existing
+            <replaceable>FILE</replaceable> before creating and opening new
+            one.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>essid <replaceable>ESSID</replaceable></option></term>
+
+        <listitem>
+          <para>
+            This option is used to specify a scan on a specific ESSID.  With
+            some card/driver, this enables to see hidden networks. But usually,
+            it does nothing. <emphasis>Do not assume</emphasis> that in general
+            case it allow to restrict output to a specific network.
+          </para>
+
+          <para>
+            This option is inherited from code of <command>iwlist
+            scan</command> "as is". Responsible for its work is only the
+            kernel driver of you wireless card.
+          </para>
+        </listitem>
+      </varlistentry>
+
+     <varlistentry>
+       <term><option>pid <arg choice="opt"><replaceable>PIDFILE</replaceable></arg></option></term>
+
+       <listitem>
+         <para>
+           Use <replaceable>PIDFILE</replaceable> as PID file, i.e. write into
+           it PID of man daemon process just after starting, and remove this
+           file just before finishing.
+         </para>
+
+         <para>
+           If you specify <option>pid</option> option, but do not specify
+           <replaceable>PIDFILE</replaceable>, 
+           file <filename>./iwscand.pid</filename>
+           will be used ("." means directory from which
+           <command>iwscand</command> was started, despite that after starting
+           it uses "/" as working dir). Note that in this case you must use
+           <option>pid</option> as <emphasis>last</emphasis> in command line,
+           to avoid confusing when other options will considered as PID file
+           name.
+         </para>
+
+         <para>
+           It is not recommended to use world-writeable locations like
+           <filename>/tmp</filename> as places for PID file when you run
+           <command>iwscand</command> as root due to possibility 
+           symlink attacks. Hovewer, <command>iwscand</command> will remove old
+           PID file if it exists just before creating new one, which can 
+           decrease chances for successful attacks.
+         </para>
+       </listitem>
+     </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Signals</title>
+
+    <variablelist>
+      <varlistentry>
+        <term><varname>SIGUSR1</varname></term>
+
+        <listitem>
+          <para>
+            Perform the scan on given <replaceable>INTERFACE</replaceable> and
+            print XML-formatted results into <replaceable>FILE</replaceable>.
+            After results, <command>iwscand</command> also adds empty line as
+            mark of message ending.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>SIGTERM</varname></term>
+
+        <listitem>
+          <para>
+            Finish the work. After that signal, <command>iwscand</command>
+            closes <replaceable>FILE</replaceable>, removes
+            <replaceable>PIDFILE</replaceable>, and terminates.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Typical errors</title>
+
+    <para>
+      Firstly, let's look at the error thar occur at <command>iwscand</command>
+      startup, before the scan begins. Such errors are printed into
+      <literal>stderr</literal> without any XML formatting. After such errors,
+      <command>iwscand</command> immediately exits with non-zero exit code.
+    </para>
+
+    <variablelist>
+      <varlistentry>
+        <term><literal>iwscand: too few arguments for scanning option [to]</literal></term>
+        <term><literal>iwscand: too few arguments for scanning option [essid]</literal></term>
+
+        <listitem>
+          <para>
+            If you specify options like <option>to</option> or
+            <option>essid</option>, do not forget to give them corresponding
+            argument, i.e. <replaceable>FILE</replaceable> or
+            <replaceable>ESSID</replaceable> respectively.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscand: options "safe" and "nonblock" are mutually exclusive</literal></term>
+
+        <listitem>
+          <para>
+            Error text is self-descriptive. If you want to open FIFO
+            <replaceable>FILE</replaceable> in non-blocking mode, you must
+            create it and open for reading <emphasis>before</emphasis> starting
+            <command>iwscand</command>. On the other hand, option
+            <option>safe</option> will remove all pre-created files.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscand: output file ("to FILE") is mandatory commandline parameter!</literal></term>
+
+        <listitem>
+          <para>
+            Do not forget to specify name of output file, because daemons
+            cannot print data into console!
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscand: scanning all interfaces are not allowed by iwscand. Try to use iwscan.</literal></term>
+
+        <listitem>
+          <para>
+            If you want to run background scanning for multiple interfaces, you
+            need to run separate <command>iwscand</command> instance per each
+            interface.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscand: cannot open output file</literal></term>
+        <term><literal>iwscand: cannot open PID file</literal></term>
+
+        <listitem>
+          <para>
+            Usually there is a problem with permissions. Check your credentials
+            (you must have write access to catalog in which you want to place
+            output file). Check is file system mounted read-only.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscand: cannot resolve PID file name</literal></term>
+
+        <listitem>
+          <para>
+            Looks like bug in your OS (if you want technical details:
+            <citerefentry>
+              <refentrytitle>realpath</refentrytitle>
+              <manvolnum>3</manvolnum>
+            </citerefentry> fails, although file was already
+            <citerefentry>
+              <refentrytitle>open</refentrytitle>
+              <manvolnum>3</manvolnum>
+            </citerefentry>-ed).
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      There we consider only errors that occurs during preparing to scan.
+      Errors that may occur <emphasis>during scan process</emphasis>, 
+      described in
+      <citerefentry>
+        <refentrytitle>iwscan-xml-format</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>, as they are printed in XML format.
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Examples</title>
+
+    <para>
+      Start <command>iwscand</command> for scanning on
+      <literal>wlan0</literal>, with printing results into file
+      <filename>dump.xml</filename>, and with PID file
+      <filename>./iwscand.pid</filename>.
+    </para>
+    <programlisting>iwscand wlan0 to dump.xml pid</programlisting>
+
+    <para>
+      Perform the scan on interface <literal>wlan0</literal> 
+      and check for results:
+    </para>
+    <programlisting>kill -SIGUSR1 $(cat ./iwscand.pid) &amp;&amp; cat dump.xml</programlisting>
+    <para>
+      Stop <command>iwscand</command>:
+    </para>
+    <programlisting>kill $(cat ./iwscand.pid)</programlisting>
+
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+    <para>
+      <citerefentry>
+        <refentrytitle>iwscan</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwscan-xml-format</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwlist</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwspy</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwevent</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwpriv</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iw</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>wireless</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+</refentry>
+
+

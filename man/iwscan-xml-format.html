@@ -1,0 +1,113 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>iwscan-xml-format</title><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="iwscan-xml-format"><a name="idp197088"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>iwscan-xml-format &#8212; brief description of XML format, used by iwscan and iwscand</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">iwscan</code>  [
+         <em class="replaceable"><code>INTERFACE</code></em>|all 
+         [essid <em class="replaceable"><code>ESSID</code></em>]
+         [last]
+         [to <em class="replaceable"><code>FILE</code></em>]
+      ]</p></div></div><div class="refsect1" title="Description"><a name="idp161296"></a><h2>Description</h2><p>
+      Names of XML tag is mostly self-descriptive. Complete machine-readable
+      description of syntax is described in <code class="filename">iwscan.xsd</code>,
+      distributed in set with <span class="command"><strong>iwscan</strong></span>. You can validate the
+      syntax of <span class="command"><strong>iwscan</strong></span> output by command like that:
+      </p><pre class="programlisting">xmllint --nonet --noout --schema /path/to/iwscan.xsd <em class="replaceable"><code>FILE</code></em></pre><p>
+      (usually <code class="filename">iwscan.xsd</code> is located in place like
+      <code class="filename">/usr/share/iwscan/</code> or so, depending of your install
+      <code class="varname">PREFIX</code>).
+    </p><p>Some additional notes:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+          If you runs <span class="command"><strong>iwscan</strong></span> for specified interface, e.g.
+          <span class="command"><strong>iwscan wlan0</strong></span>, root element of XML will be
+          "<code class="literal">&lt;Interface&gt;</code>" tag. Otherwise, i.e. you run
+          <span class="command"><strong>iwscan all</strong></span> or <span class="command"><strong>iwscand</strong></span>, root
+          element will be "<code class="literal">&lt;Scan&gt;</code>" (which are
+          container for "<code class="literal">&lt;Interface&gt;</code>" tags). Both have
+          timestamps, but <code class="literal">&lt;Interface&gt;</code> also has
+          additional attributes, such as error flag ("failed") and error text
+          ("error"), and also duration of a scan. Keep it in mind when
+          processing their output.
+        </p></li><li class="listitem"><p>
+          Some tags may repeats two or more times. Especially worth noting
+          "<code class="literal">&lt;Channel&gt;</code>" (tag with simple content,
+          usually duplicates itself) and "<code class="literal">&lt;BitRates&gt;</code>"
+          (tag with complex content, usually each contains only a part of the
+          full list). It is due to specific of <span class="command"><strong>iwscan</strong></span>, whis
+          simply reads and decodes reply from the kernel in stream manner.
+        </p><p>
+          If it makes problem for you, please conider using of XSLT template
+          <code class="filename">iwscan-group-same.xslt</code>, which is distributed in
+          set with <span class="command"><strong>iwscan</strong></span>. Command will look like
+          </p><pre class="programlisting">xsltproc --nonet -o <em class="replaceable"><code>OUTFILE</code></em> /path/to/iwscan-group-same.xslt <em class="replaceable"><code>INFILE</code></em></pre><p>
+          (usually <code class="filename">iwscan-group-same.xslt</code> is located in
+          place like <code class="filename">/usr/share/iwscan/</code> or so, depending
+          of your install <code class="varname">PREFIX</code>).
+        </p></li><li class="listitem"><p>
+          Note that <span class="command"><strong>iwscan</strong></span>/<span class="command"><strong>iwscand</strong></span> knows
+          and decodes only those IEs (informational extensions) that are known 
+          to <span class="command"><strong>iwlist</strong></span>. For now, version of
+          <span class="command"><strong>iwlist</strong></span> that are used as basic, 30-pre9, released
+          in 2009, and knows only two IEs: <code class="literal">0xdd</code> (WPA1) and
+          <code class="literal">0x30</code> (WPA2). All other IEs will be printed "as
+          is", in special "<code class="literal">&lt;IE&gt;</code>" tags (each byte
+          presented by two hexadecimal digits).
+        </p></li><li class="listitem"><p>
+          Some tags have "strange" attributes like "<code class="literal">&lt;Frequency
+            fixed='...'&gt;</code>" or "<code class="literal">&lt;Quality
+            updated='...'&gt;</code>". Such attributes does not have
+          explicit analogue in <span class="command"><strong>iwlist scan</strong></span> output. However,
+          sentences like "<code class="literal">Frequency:2.457 GHz</code>" or
+          "<code class="literal">Quality=19/70</code>" indludes separator that have
+          special means: ":" corresponds to false (0) value of "strange"
+          attribute, while "=" corresponds to "true" (1) value of this
+          attribute.
+        </p></li><li class="listitem"><p>
+          Some notes about specifics of <span class="command"><strong>iwscand</strong></span>. When is
+          started, it prints into file two header lines:
+          </p><pre class="programlisting">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;Scan&gt;</pre><p>
+        </p><p>
+          When performing each scan iteration, it prints one
+          <code class="literal">&lt;Interface&gt;</code> tag, which contains results of
+          scan (or which attributes contains error flag and message, see
+          below), trailed by one empty line.
+        </p><p>
+          When it finishes working, it prints into file closing
+          <code class="literal">&lt;/Scan&gt;</code> tag.
+        </p></li></ul></div></div><div class="refsect1" title="Error messages"><a name="idp77488"></a><h2>Error messages</h2><p>
+      Here we consider the most common errors that may occur during scanning. 
+      Such errors are printed in "<code class="literal">error</code>" attribute of
+      "<code class="literal">&lt;Interface&gt;</code>" tag. In such (error) cases,
+      attribute "<code class="literal">failed</code>" (error flag) must be true. Please
+      not that scan errors <span class="emphasis"><em>does not lead</em></span> to premature 
+      termination of <span class="command"><strong>iwscan</strong></span>/<span class="command"><strong>iwscand</strong></span> or 
+      setting non-zero exit code.
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="literal">Operation not permitted</code></span></dt><dd><p>
+            To scan for wireless network, you need root privileges, or, as
+            alternative, you can add <code class="literal">CAP_NET_ADMIN</code> to
+            <span class="command"><strong>iwscan</strong></span>/<span class="command"><strong>iwscand</strong></span> binaries.
+            Latter can be done with commands like
+            </p><pre class="programlisting"># setcap cap_net_admin+ep $(which iwscan)</pre><p>
+            </p><pre class="programlisting"># setcap cap_net_admin+ep $(which iwscand)</pre><p>
+            under root shell. After that, you can simply run this programs as
+            ordinary user. Please note that <span class="command"><strong>make install</strong></span>
+            tries to do this automatically (see <code class="filename">INSTALL</code>
+            for details).
+          </p></dd><dt><span class="term"><code class="literal">Network is down</code></span></dt><dd><p>
+            You need to set your wireless network interface into state
+            <code class="literal">UP</code>. This can be done with command like
+            </p><pre class="programlisting"># ip link set dev <em class="replaceable"><code>INTERFACE</code></em> up</pre><p>
+            under root shell. If you got an error like
+            </p><pre class="programlisting">SIOCSIFFLAGS: No such file or directory</pre><p>
+            you definitely need to install firmware for your wireless card.
+            If you do not know how to do this, please use internet search, 
+            it is wery powerful thing!
+          </p></dd><dt><span class="term"><code class="literal">Interface does not support scanning</code></span></dt><dd><p>
+            Error text is self-descriptive. Your wireless card or driver does
+            not support scanning, or you trying to scan on non-wireless
+            interface. Also such interface may not exist at all (e.g. in case of
+            confusing with other parameter, like 
+            "<span class="command"><strong>iwscan to ...</strong></span>" which leads to an attempt to scan
+            interface named "<code class="literal">to</code>").
+          </p></dd></dl></div></div><div class="refsect1" title="See also"><a name="idp121856"></a><h2>See also</h2><p>
+      <span class="citerefentry"><span class="refentrytitle">iwscan</span>(1)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwscand</span>(1)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwlist</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">wireless</span>(7)</span>
+    </p></div></div></body></html>

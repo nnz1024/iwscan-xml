@@ -1,0 +1,234 @@
+<?xml version='1.0'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<refentry xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <refentryinfo>
+    <title>iwscan XML format</title>
+    <productname>iwscan</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>developer of iwscan</contrib>
+        <firstname>Sergey</firstname>
+        <surname>Ptashnick</surname>
+        <email>0comffdiz@inbox.ru</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refname>iwscan-xml-format</refname>
+    <manvolnum>7</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>iwscan-xml-format</refname>
+    <refpurpose>brief description of XML format, used by iwscan and iwscand</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>iwscan</command>
+      <arg choice="opt">
+        <arg choice="plain"><replaceable>INTERFACE</replaceable>|all</arg>
+        <arg choice="opt">essid <replaceable>ESSID</replaceable></arg>
+        <arg choice="opt">last</arg>
+        <arg choice="opt">to <replaceable>FILE</replaceable></arg>
+      </arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>
+      Names of XML tag is mostly self-descriptive. Complete machine-readable
+      description of syntax is described in <filename>iwscan.xsd</filename>,
+      distributed in set with <command>iwscan</command>. You can validate the
+      syntax of <command>iwscan</command> output by command like that:
+      <programlisting>xmllint --nonet --noout --schema /path/to/iwscan.xsd <replaceable>FILE</replaceable></programlisting>
+      (usually <filename>iwscan.xsd</filename> is located in place like
+      <filename>/usr/share/iwscan/</filename> or so, depending of your install
+      <varname>PREFIX</varname>).
+    </para>
+
+    <para>Some additional notes:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>
+          If you runs <command>iwscan</command> for specified interface, e.g.
+          <command>iwscan wlan0</command>, root element of XML will be
+          "<literal>&lt;Interface&gt;</literal>" tag. Otherwise, i.e. you run
+          <command>iwscan all</command> or <command>iwscand</command>, root
+          element will be "<literal>&lt;Scan&gt;</literal>" (which are
+          container for "<literal>&lt;Interface&gt;</literal>" tags). Both have
+          timestamps, but <literal>&lt;Interface&gt;</literal> also has
+          additional attributes, such as error flag ("failed") and error text
+          ("error"), and also duration of a scan. Keep it in mind when
+          processing their output.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Some tags may repeats two or more times. Especially worth noting
+          "<literal>&lt;Channel&gt;</literal>" (tag with simple content,
+          usually duplicates itself) and "<literal>&lt;BitRates&gt;</literal>"
+          (tag with complex content, usually each contains only a part of the
+          full list). It is due to specific of <command>iwscan</command>, whis
+          simply reads and decodes reply from the kernel in stream manner.
+        </para>
+
+        <para>
+          If it makes problem for you, please conider using of XSLT template
+          <filename>iwscan-group-same.xslt</filename>, which is distributed in
+          set with <command>iwscan</command>. Command will look like
+          <programlisting>xsltproc --nonet -o <replaceable>OUTFILE</replaceable> /path/to/iwscan-group-same.xslt <replaceable>INFILE</replaceable></programlisting>
+          (usually <filename>iwscan-group-same.xslt</filename> is located in
+          place like <filename>/usr/share/iwscan/</filename> or so, depending
+          of your install <varname>PREFIX</varname>).
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Note that <command>iwscan</command>/<command>iwscand</command> knows
+          and decodes only those IEs (informational extensions) that are known 
+          to <command>iwlist</command>. For now, version of
+          <command>iwlist</command> that are used as basic, 30-pre9, released
+          in 2009, and knows only two IEs: <literal>0xdd</literal> (WPA1) and
+          <literal>0x30</literal> (WPA2). All other IEs will be printed "as
+          is", in special "<literal>&lt;IE&gt;</literal>" tags (each byte
+          presented by two hexadecimal digits).
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Some tags have "strange" attributes like "<literal>&lt;Frequency
+            fixed='...'&gt;</literal>" or "<literal>&lt;Quality
+            updated='...'&gt;</literal>". Such attributes does not have
+          explicit analogue in <command>iwlist scan</command> output. However,
+          sentences like "<literal>Frequency:2.457 GHz</literal>" or
+          "<literal>Quality=19/70</literal>" indludes separator that have
+          special means: ":" corresponds to false (0) value of "strange"
+          attribute, while "=" corresponds to "true" (1) value of this
+          attribute.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Some notes about specifics of <command>iwscand</command>. When is
+          started, it prints into file two header lines:
+          <programlisting>&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;Scan&gt;</programlisting>
+        </para>
+        <para>
+          When performing each scan iteration, it prints one
+          <literal>&lt;Interface&gt;</literal> tag, which contains results of
+          scan (or which attributes contains error flag and message, see
+          below), trailed by one empty line.
+        </para>
+        <para>
+          When it finishes working, it prints into file closing
+          <literal>&lt;/Scan&gt;</literal> tag.
+        </para>
+      </listitem>
+    </itemizedlist>
+  </refsect1>
+
+  <refsect1>
+    <title>Error messages</title>
+    
+    <para>
+      Here we consider the most common errors that may occur during scanning. 
+      Such errors are printed in "<literal>error</literal>" attribute of
+      "<literal>&lt;Interface&gt;</literal>" tag. In such (error) cases,
+      attribute "<literal>failed</literal>" (error flag) must be true. Please
+      not that scan errors <emphasis>does not lead</emphasis> to premature 
+      termination of <command>iwscan</command>/<command>iwscand</command> or 
+      setting non-zero exit code.
+    </para>
+
+    <variablelist>
+      <varlistentry>
+        <term><literal>Operation not permitted</literal></term>
+
+        <listitem>
+          <para>
+            To scan for wireless network, you need root privileges, or, as
+            alternative, you can add <literal>CAP_NET_ADMIN</literal> to
+            <command>iwscan</command>/<command>iwscand</command> binaries.
+            Latter can be done with commands like
+            <programlisting># setcap cap_net_admin+ep $(which iwscan)</programlisting>
+            <programlisting># setcap cap_net_admin+ep $(which iwscand)</programlisting>
+            under root shell. After that, you can simply run this programs as
+            ordinary user. Please note that <command>make install</command>
+            tries to do this automatically (see <filename>INSTALL</filename>
+            for details).
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>Network is down</literal></term>
+
+        <listitem>
+          <para>
+            You need to set your wireless network interface into state
+            <literal>UP</literal>. This can be done with command like
+            <programlisting># ip link set dev <replaceable>INTERFACE</replaceable> up</programlisting>
+            under root shell. If you got an error like
+            <programlisting>SIOCSIFFLAGS: No such file or directory</programlisting>
+            you definitely need to install firmware for your wireless card.
+            If you do not know how to do this, please use internet search, 
+            it is wery powerful thing!
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>Interface does not support scanning</literal></term>
+
+        <listitem>
+          <para>
+            Error text is self-descriptive. Your wireless card or driver does
+            not support scanning, or you trying to scan on non-wireless
+            interface. Also such interface may not exist at all (e.g. in case of
+            confusing with other parameter, like 
+            "<command>iwscan to ...</command>" which leads to an attempt to scan
+            interface named "<literal>to</literal>").
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+    <para>
+      <citerefentry>
+        <refentrytitle>iwscan</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwscand</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwlist</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>wireless</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+</refentry>
+
+

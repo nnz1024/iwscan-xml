@@ -1,0 +1,315 @@
+'\" t
+.\"     Title: iwscand
+.\"    Author: Jean Tourrilhes <jt@hpl.hp.com>
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 07/01/2017
+.\"    Manual: iwscand
+.\"    Source: iwscan
+.\"  Language: English
+.\"
+.TH "IWSCAND" "1" "07/01/2017" "iwscan" "iwscand"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+iwscand \- Daemon which scans for wireless networks and outputs XML\-formatted results into given file/FIFO
+.SH "SYNOPSIS"
+.HP \w'\fBiwscan\fR\ 'u
+\fBiwscan\fR \fIINTERFACE\fR to\ \fIFILE\fR [safe|nonblock] [essid\ \fIESSID\fR] [pid\ [\fIPIDFILE\fR]]
+.SH "DESCRIPTION"
+.PP
+Daemon
+\fBiwscand\fR
+works in background and waits for signals\&. When it recieves
+\fISIGUSR1\fR, it performs scan for wireless networks and output results in XML format (see
+\fBiwscan-xml-format\fR(7)) into given file or FIFO\&. Scanning functionality is mostly same as in
+\fBiwscan\fR(1), but you can scan only one interface by each daemon process\&.
+.SH "PARAMETERS"
+.PP
+Possible command line parameters:
+.PP
+\fIINTERFACE\fR
+.RS 4
+Name of wireless network interface to scan, e\&.g\&.
+wlan0\&. In contrast to
+\fBiwscan\fR, this argument is mandatory, and you cannot specify
+\fBall\fR
+as interface name\&. Each
+\fBiwscand\fR
+must scan only one interface\&. If you want to scan multiple interfaces, you need to start corresponding number of
+\fBiwscand\fR
+processes with proper arguments\&.
+.RE
+.PP
+\fBto \fR\fB\fIFILE\fR\fR
+.RS 4
+Output results of scan into a
+\fIFILE\fR\&. This argument is mandatory\&.
+.sp
+Note that if
+\fIFILE\fR
+is FIFO (special file usually created with
+\fBmkfifo\fR), nobody now reads it, and option
+\fBnonblock\fR
+not specified,
+\fBiwscand\fR
+will hangs and will not forks until someone opens this file for reading\&. After that, it will continue initialization and detach from console\&.
+.sp
+On the other hand, if
+\fIFILE\fR
+is FIFO, nobody now reads it, and option
+\fBnonblock\fR
+is specified,
+\fBiwscand\fR
+will immediately fail with error
+iwscand: cannot open output file: No such device or address\&. This is due to specific of nonblocking input/output\&.
+.RE
+.PP
+\fBsafe\fR
+.RS 4
+Remove old
+\fIFILE\fR
+(if it exists) before creating new one at the daemon starting stage\&. This can partially protect you from symlink attack, when you run
+\fBiwscand\fR
+with root privileges\&. Within the such attack, some bad guy can create
+\fIFILE\fR
+as symlink pointing to certain root\-only writable file, expecting that
+\fBiwscand\fR
+overwite it with scan results\&. Removing
+\fIFILE\fR
+just before opening decreases attack window to very small time window, but do not eliminate it completely\&. So be careful even with this option, and try to avoid world\-writeable locations like
+/tmp
+as place for
+\fIFILE\fR
+when run
+\fBiwscand\fR
+under root privileges\&.
+.sp
+This option is mutually exclusive with
+\fBnonblock\fR, which expects that file must already exists and opened for reading by some other program\&.
+.RE
+.PP
+\fBnonblock\fR
+.RS 4
+Open file
+\fIFILE\fR
+in non\-blocking mode\&. This may have mean primarily for FIFOs\&. Note that reader must open FIFO for read
+\fIbefore\fR
+starting of
+\fBiwscand\fR\&. Otherwise, later will fail with the error
+iwscand: cannot open output file: No such device or address\&. This is due to specific of nonblocking input/output\&.
+.sp
+This option is mutually exclusive with
+\fBsafe\fR, which remove existing
+\fIFILE\fR
+before creating and opening new one\&.
+.RE
+.PP
+\fBessid \fR\fB\fIESSID\fR\fR
+.RS 4
+This option is used to specify a scan on a specific ESSID\&. With some card/driver, this enables to see hidden networks\&. But usually, it does nothing\&.
+\fIDo not assume\fR
+that in general case it allow to restrict output to a specific network\&.
+.sp
+This option is inherited from code of
+\fBiwlist scan\fR
+"as is"\&. Responsible for its work is only the kernel driver of you wireless card\&.
+.RE
+.PP
+\fBpid \fR\fB[\fIPIDFILE\fR]\fR
+.RS 4
+Use
+\fIPIDFILE\fR
+as PID file, i\&.e\&. write into it PID of man daemon process just after starting, and remove this file just before finishing\&.
+.sp
+If you specify
+\fBpid\fR
+option, but do not specify
+\fIPIDFILE\fR, file
+\&./iwscand\&.pid
+will be used ("\&." means directory from which
+\fBiwscand\fR
+was started, despite that after starting it uses "/" as working dir)\&. Note that in this case you must use
+\fBpid\fR
+as
+\fIlast\fR
+in command line, to avoid confusing when other options will considered as PID file name\&.
+.sp
+It is not recommended to use world\-writeable locations like
+/tmp
+as places for PID file when you run
+\fBiwscand\fR
+as root due to possibility symlink attacks\&. Hovewer,
+\fBiwscand\fR
+will remove old PID file if it exists just before creating new one, which can decrease chances for successful attacks\&.
+.RE
+.SH "SIGNALS"
+.PP
+\fISIGUSR1\fR
+.RS 4
+Perform the scan on given
+\fIINTERFACE\fR
+and print XML\-formatted results into
+\fIFILE\fR\&. After results,
+\fBiwscand\fR
+also adds empty line as mark of message ending\&.
+.RE
+.PP
+\fISIGTERM\fR
+.RS 4
+Finish the work\&. After that signal,
+\fBiwscand\fR
+closes
+\fIFILE\fR, removes
+\fIPIDFILE\fR, and terminates\&.
+.RE
+.SH "TYPICAL ERRORS"
+.PP
+Firstly, let\*(Aqs look at the error thar occur at
+\fBiwscand\fR
+startup, before the scan begins\&. Such errors are printed into
+stderr
+without any XML formatting\&. After such errors,
+\fBiwscand\fR
+immediately exits with non\-zero exit code\&.
+.PP
+iwscand: too few arguments for scanning option [to], iwscand: too few arguments for scanning option [essid]
+.RS 4
+If you specify options like
+\fBto\fR
+or
+\fBessid\fR, do not forget to give them corresponding argument, i\&.e\&.
+\fIFILE\fR
+or
+\fIESSID\fR
+respectively\&.
+.RE
+.PP
+iwscand: options "safe" and "nonblock" are mutually exclusive
+.RS 4
+Error text is self\-descriptive\&. If you want to open FIFO
+\fIFILE\fR
+in non\-blocking mode, you must create it and open for reading
+\fIbefore\fR
+starting
+\fBiwscand\fR\&. On the other hand, option
+\fBsafe\fR
+will remove all pre\-created files\&.
+.RE
+.PP
+iwscand: output file ("to FILE") is mandatory commandline parameter!
+.RS 4
+Do not forget to specify name of output file, because daemons cannot print data into console!
+.RE
+.PP
+iwscand: scanning all interfaces are not allowed by iwscand\&. Try to use iwscan\&.
+.RS 4
+If you want to run background scanning for multiple interfaces, you need to run separate
+\fBiwscand\fR
+instance per each interface\&.
+.RE
+.PP
+iwscand: cannot open output file, iwscand: cannot open PID file
+.RS 4
+Usually there is a problem with permissions\&. Check your credentials (you must have write access to catalog in which you want to place output file)\&. Check is file system mounted read\-only\&.
+.RE
+.PP
+iwscand: cannot resolve PID file name
+.RS 4
+Looks like bug in your OS (if you want technical details:
+\fBrealpath\fR(3)
+fails, although file was already
+\fBopen\fR(3)\-ed)\&.
+.RE
+.PP
+There we consider only errors that occurs during preparing to scan\&. Errors that may occur
+\fIduring scan process\fR, described in
+\fBiwscan-xml-format\fR(7), as they are printed in XML format\&.
+.SH "EXAMPLES"
+.PP
+Start
+\fBiwscand\fR
+for scanning on
+wlan0, with printing results into file
+dump\&.xml, and with PID file
+\&./iwscand\&.pid\&.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+iwscand wlan0 to dump\&.xml pid
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Perform the scan on interface
+wlan0
+and check for results:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+kill \-SIGUSR1 $(cat \&./iwscand\&.pid) && cat dump\&.xml
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Stop
+\fBiwscand\fR:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+kill $(cat \&./iwscand\&.pid)
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+.PP
+
+\fBiwscan\fR(1),
+\fBiwscan-xml-format\fR(7),
+\fBiwlist\fR(8),
+\fBiwspy\fR(8),
+\fBiwevent\fR(8),
+\fBiwpriv\fR(8),
+\fBiw\fR(8),
+\fBwireless\fR(7)
+.SH "AUTHORS"
+.PP
+\fBJean Tourrilhes\fR <\&jt@hpl\&.hp\&.com\&>
+.RS 4
+developer of wireless\-tools
+.RE
+.PP
+\fBNathan Hoad\fR <\&nathan@getoffmalawn\&.com\&>
+.RS 4
+developer of wireless\-tools
+.RE
+.PP
+\fBSergey Ptashnick\fR <\&0comffdiz@inbox\&.ru\&>
+.RS 4
+developer of iwscan
+.RE

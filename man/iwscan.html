@@ -1,0 +1,146 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>iwscan</title><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="iwscan"><a name="idp4031184"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>iwscan &#8212; Scan for wireless networks and output results in XML 
+      format</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">iwscan</code>  [
+         <em class="replaceable"><code>INTERFACE</code></em>|all 
+         [essid <em class="replaceable"><code>ESSID</code></em>]
+         [last]
+         [to <em class="replaceable"><code>FILE</code></em>]
+      ]</p></div></div><div class="refsect1" title="Description"><a name="idp270912"></a><h2>Description</h2><p>
+      Program <span class="command"><strong>iwscan</strong></span> may be used to perform 
+      scanning for wireless networks, moslty like <span class="command"><strong>iwlist 
+      scan</strong></span> (to be clear, <span class="command"><strong>iwscan</strong></span>
+      exactly based on the code of <span class="command"><strong>iwlist</strong></span>). Main 
+      difference is output format: while <span class="command"><strong>iwlist</strong></span> 
+      uses human-readable format, <span class="command"><strong>iwscan</strong></span> formats
+      output into XML and intended primarily to be called from scripts.
+    </p></div><div class="refsect1" title="Parameters"><a name="idp212016"></a><h2>Parameters</h2><p>Possible command line parameters:</p><div class="variablelist"><dl><dt><span class="term"><em class="replaceable"><code>INTERFACE</code></em></span></dt><dd><p>
+            Name of wireless network interface to scan, e.g.
+            <code class="literal">wlan0</code>. If you invoke <span class="command"><strong>iwscan</strong></span>
+            without any arguments, it will try to scan on all available network
+            interfaces. If you want to scan all intefaces, but also you add
+            other parameters, e.g. <code class="option">last</code>, you need to
+            explicitly specify <code class="option">all</code> as the first
+            parameter.
+          </p></dd><dt><span class="term"><code class="option">essid <em class="replaceable"><code>ESSID</code></em></code></span></dt><dd><p>
+            This option is used to specify a scan on a specific ESSID.  With
+            some card/driver, this enables to see hidden networks. But usually,
+            it does nothing. <span class="emphasis"><em>Do not assume</em></span> that in general
+            case it allow to restrict output to a specific network.
+          </p><p>
+            This option is inherited from code of <span class="command"><strong>iwlist
+            scan</strong></span> "as is". Responsible for its work is only the
+            kernel driver of you wireless card.
+          </p></dd><dt><span class="term"><code class="option">last</code></span></dt><dd><p>
+            With this options, <span class="command"><strong>iwscan</strong></span> does not trigger 
+            a scan, and only tries to read left-over scan results.</p><p>
+            This option is also inherited from code of <span class="command"><strong>iwlist 
+            scan</strong></span> "as is".
+          </p></dd><dt><span class="term"><code class="option">to <em class="replaceable"><code>FILE</code></em></code></span></dt><dd><p>
+           Output results of scan into a <em class="replaceable"><code>FILE</code></em>
+           instead of console. If <em class="replaceable"><code>FILE</code></em> already
+           exists, it will be removed and filled with only results of last
+           scan.
+         </p><p>
+           Note that if <em class="replaceable"><code>FILE</code></em> is FIFO (special file
+           usually created with <span class="command"><strong>mkfifo</strong></span>) and nobody now reads
+           it, <span class="command"><strong>iwscan</strong></span> will hangs until someone opens this
+           file for reading. After that, it will perform scan, output results
+           into file, and exit. This behavior is due to the specifics of FIFO.
+         </p></dd></dl></div></div><div class="refsect1" title="Output format"><a name="idp81472"></a><h2>Output format</h2><p>
+      Names of XML tag is mostly self-descriptive. Complete machine-readable
+      description of syntax is described in <code class="filename">iwscan.xsd</code>,
+      distributed in set with <span class="command"><strong>iwscan</strong></span>. You can validate the
+      syntax of <span class="command"><strong>iwscan</strong></span> output by command like that:
+      </p><pre class="programlisting">xmllint --nonet --noout --schema /path/to/iwscan.xsd <em class="replaceable"><code>FILE</code></em></pre><p>
+      (usually <code class="filename">iwscan.xsd</code> is located in place like
+      <code class="filename">/usr/share/iwscan/</code> or so, depending of your install
+      <code class="varname">PREFIX</code>).
+    </p><p>Some additional notes:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+          If you runs <span class="command"><strong>iwscan</strong></span> for specified interface, e.g.
+          <span class="command"><strong>iwscan wlan0</strong></span>, root element of XML will be
+          "<code class="literal">&lt;Interface&gt;</code>" tag. Otherwise, i.e. you run
+          <span class="command"><strong>iwscan all</strong></span> or <span class="command"><strong>iwscand</strong></span>, root
+          element will be "<code class="literal">&lt;Scan&gt;</code>" (which are
+          container for "<code class="literal">&lt;Interface&gt;</code>" tags). Both have
+          timestamps, but <code class="literal">&lt;Interface&gt;</code> also has
+          additional attributes, such as error flag ("failed") and error text
+          ("error"), and also duration of a scan. Keep it in mind when
+          processing their output.
+        </p></li><li class="listitem"><p>
+          Some tags may repeats two or more times. Especially worth noting
+          "<code class="literal">&lt;Channel&gt;</code>" (tag with simple content,
+          usually duplicates itself) and "<code class="literal">&lt;BitRates&gt;</code>"
+          (tag with complex content, usually each contains only a part of the
+          full list). It is due to specific of <span class="command"><strong>iwscan</strong></span>, whis
+          simply reads and decodes reply from the kernel in stream manner.
+        </p><p>
+          If it makes problem for you, please conider using of XSLT template
+          <code class="filename">iwscan-group-same.xslt</code>, which is distributed in
+          set with <span class="command"><strong>iwscan</strong></span>. Command will look like
+        </p><pre class="programlisting">xsltproc --nonet -o <em class="replaceable"><code>OUTFILE</code></em> /path/to/iwscan-group-same.xslt <em class="replaceable"><code>INFILE</code></em></pre><p>
+          (usually <code class="filename">iwscan-group-same.xslt</code> is located in
+          place like <code class="filename">/usr/share/iwscan/</code> or so, depending
+          of your install <code class="varname">PREFIX</code>).
+        </p></li><li class="listitem"><p>
+          <span class="command"><strong>iwscan</strong></span> knows and decodes only those IEs 
+          (informational extensions) that are known to 
+          <span class="command"><strong>iwlist</strong></span>. For now, version of
+          <span class="command"><strong>iwlist</strong></span> that are used as basic, 30-pre9,
+          released in 2009, and knows only two IEs:
+          <code class="literal">0xdd</code> (WPA1) and <code class="literal">0x30</code> 
+          (WPA2). All other IEs will be printed "as is", in special
+          "<code class="literal">&lt;IE&gt;</code>" tags (each byte presented by
+          two hexadecimal digits).
+        </p></li><li class="listitem"><p>
+          Some tags have "strange" attributes like "<code class="literal">&lt;Frequency
+            fixed='...'&gt;</code>" or "<code class="literal">&lt;Quality
+            updated='...'&gt;</code>". Such attributes does not have
+          explicit analogue in <span class="command"><strong>iwlist scan</strong></span> output. However,
+          sentences like "<code class="literal">Frequency:2.457 GHz</code>" or
+          "<code class="literal">Quality=19/70</code>" includes separator that have
+          special means: ":" corresponds to false (0) value of "strange"
+          attribute, while "=" corresponds to "true" (1) value of this
+          attribute.
+        </p></li></ul></div></div><div class="refsect1" title="Typical errors"><a name="idp136800"></a><h2>Typical errors</h2><p>
+      Firstly, let's look at the error thar occur at <span class="command"><strong>iwscan</strong></span>
+      startup, before the scan begins. Such errors are printed into
+      <code class="literal">stderr</code> without any XML formatting. After such errors,
+      <span class="command"><strong>iwscan</strong></span> immediately exits with non-zero exit code.
+    </p><div class="variablelist"><dl><dt><span class="term"><code class="literal">iwscan: too few arguments for scanning option [to]</code>, </span><span class="term"><code class="literal">iwscan: too few arguments for scanning option [essid]</code></span></dt><dd><p>
+            If you specify options like <code class="option">to</code> or
+            <code class="option">essid</code>, do not forget to give them corresponding
+            argument, i.e. <em class="replaceable"><code>FILE</code></em> or
+            <em class="replaceable"><code>ESSID</code></em> respectively.
+          </p></dd><dt><span class="term"><code class="literal">iwscan: cannot open output file</code></span></dt><dd><p>
+            Usually there is a problem with permissions. Check your credentials
+            (you must have write access to catalog in which you want to place
+            output file). Check is file system mounted read-only.
+          </p></dd><dt><span class="term"><code class="literal">iwscan: cannot open IW socket</code></span></dt><dd><p>
+            Check is wireless networking and wireless extensions enabled in
+            your kernel (<code class="literal">CONFIG_WLAN</code>,
+            <code class="literal">CONFIG_WEXT_*</code> and so).
+          </p></dd></dl></div><p>
+      There we consider only errors that occurs during preparing to scan.
+      Errors that may occur <span class="emphasis"><em>during scan process</em></span>, 
+      described in
+      <span class="citerefentry"><span class="refentrytitle">iwscan-xml-format</span>(7)</span>, as they are printed in XML format.
+    </p></div><div class="refsect1" title="Examples"><a name="idp4832272"></a><h2>Examples</h2><p>
+      Try to scan on all interfaces and print results to stdout:
+    </p><pre class="programlisting">iwscan</pre><p>
+      Try to scan on interface <code class="literal">wlan0</code> and print results to
+      stdout:
+    </p><pre class="programlisting">iwscan wlan0</pre><p>
+      Try to scan on interface <code class="literal">wlan0</code> and print results to
+      file <code class="filename">dump.xml</code>:
+    </p><pre class="programlisting">iwscan wlan0 to dump.xml</pre><p>
+      Try to scan on all interfaces and print results to file
+      <code class="filename">dump.xml</code>:
+    </p><pre class="programlisting">iwscan all to dump.xml</pre></div><div class="refsect1" title="See also"><a name="idp4840336"></a><h2>See also</h2><p>
+      <span class="citerefentry"><span class="refentrytitle">iwscand</span>(1)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwscan-xml-format</span>(7)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwlist</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwspy</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwevent</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iwpriv</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">iw</span>(8)</span>,
+      <span class="citerefentry"><span class="refentrytitle">wireless</span>(7)</span>
+    </p></div></div></body></html>

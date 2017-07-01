@@ -1,0 +1,360 @@
+<?xml version='1.0'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+    "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<refentry xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <refentryinfo>
+    <title>iwscan</title>
+    <productname>iwscan</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>developer of wireless-tools</contrib>
+        <firstname>Jean</firstname>
+        <surname>Tourrilhes</surname>
+        <email>jt@hpl.hp.com</email>
+      </author>
+      <author>
+        <contrib>developer of wireless-tools</contrib>
+        <firstname>Nathan</firstname>
+        <surname>Hoad</surname>
+        <email>nathan@getoffmalawn.com</email>
+      </author>
+      <author>
+        <contrib>developer of iwscan</contrib>
+        <firstname>Sergey</firstname>
+        <surname>Ptashnick</surname>
+        <email>0comffdiz@inbox.ru</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refname>iwscan</refname>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>iwscan</refname>
+    <refpurpose>Scan for wireless networks and output results in XML 
+      format</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>iwscan</command>
+      <arg choice="opt">
+        <arg choice="plain"><replaceable>INTERFACE</replaceable>|all</arg>
+        <arg choice="opt">essid <replaceable>ESSID</replaceable></arg>
+        <arg choice="opt">last</arg>
+        <arg choice="opt">to <replaceable>FILE</replaceable></arg>
+      </arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>
+      Program <command>iwscan</command> may be used to perform 
+      scanning for wireless networks, moslty like <command>iwlist 
+      scan</command> (to be clear, <command>iwscan</command>
+      exactly based on the code of <command>iwlist</command>). Main 
+      difference is output format: while <command>iwlist</command> 
+      uses human-readable format, <command>iwscan</command> formats
+      output into XML and intended primarily to be called from scripts.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Parameters</title>
+
+    <para>Possible command line parameters:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><replaceable>INTERFACE</replaceable></term>
+
+        <listitem>
+          <para>
+            Name of wireless network interface to scan, e.g.
+            <literal>wlan0</literal>. If you invoke <command>iwscan</command>
+            without any arguments, it will try to scan on all available network
+            interfaces. If you want to scan all intefaces, but also you add
+            other parameters, e.g. <option>last</option>, you need to
+            explicitly specify <option>all</option> as the first
+            parameter.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>essid <replaceable>ESSID</replaceable></option></term>
+
+        <listitem>
+          <para>
+            This option is used to specify a scan on a specific ESSID.  With
+            some card/driver, this enables to see hidden networks. But usually,
+            it does nothing. <emphasis>Do not assume</emphasis> that in general
+            case it allow to restrict output to a specific network.
+          </para>
+
+          <para>
+            This option is inherited from code of <command>iwlist
+            scan</command> "as is". Responsible for its work is only the
+            kernel driver of you wireless card.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>last</option></term>
+
+        <listitem>
+          <para>
+            With this options, <command>iwscan</command> does not trigger 
+            a scan, and only tries to read left-over scan results.</para>
+
+          <para>
+            This option is also inherited from code of <command>iwlist 
+            scan</command> "as is".
+          </para>
+       </listitem>
+     </varlistentry>
+
+     <varlistentry>
+       <term><option>to <replaceable>FILE</replaceable></option></term>
+
+       <listitem>
+         <para>
+           Output results of scan into a <replaceable>FILE</replaceable>
+           instead of console. If <replaceable>FILE</replaceable> already
+           exists, it will be removed and filled with only results of last
+           scan.
+         </para>
+
+         <para>
+           Note that if <replaceable>FILE</replaceable> is FIFO (special file
+           usually created with <command>mkfifo</command>) and nobody now reads
+           it, <command>iwscan</command> will hangs until someone opens this
+           file for reading. After that, it will perform scan, output results
+           into file, and exit. This behavior is due to the specifics of FIFO.
+         </para>
+       </listitem>
+     </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>Output format</title>
+
+    <para>
+      Names of XML tag is mostly self-descriptive. Complete machine-readable
+      description of syntax is described in <filename>iwscan.xsd</filename>,
+      distributed in set with <command>iwscan</command>. You can validate the
+      syntax of <command>iwscan</command> output by command like that:
+      <programlisting>xmllint --nonet --noout --schema /path/to/iwscan.xsd <replaceable>FILE</replaceable></programlisting>
+      (usually <filename>iwscan.xsd</filename> is located in place like
+      <filename>/usr/share/iwscan/</filename> or so, depending of your install
+      <varname>PREFIX</varname>).
+    </para>
+
+    <para>Some additional notes:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>
+          If you runs <command>iwscan</command> for specified interface, e.g.
+          <command>iwscan wlan0</command>, root element of XML will be
+          "<literal>&lt;Interface&gt;</literal>" tag. Otherwise, i.e. you run
+          <command>iwscan all</command> or <command>iwscand</command>, root
+          element will be "<literal>&lt;Scan&gt;</literal>" (which are
+          container for "<literal>&lt;Interface&gt;</literal>" tags). Both have
+          timestamps, but <literal>&lt;Interface&gt;</literal> also has
+          additional attributes, such as error flag ("failed") and error text
+          ("error"), and also duration of a scan. Keep it in mind when
+          processing their output.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Some tags may repeats two or more times. Especially worth noting
+          "<literal>&lt;Channel&gt;</literal>" (tag with simple content,
+          usually duplicates itself) and "<literal>&lt;BitRates&gt;</literal>"
+          (tag with complex content, usually each contains only a part of the
+          full list). It is due to specific of <command>iwscan</command>, whis
+          simply reads and decodes reply from the kernel in stream manner.
+        </para>
+
+        <para>
+          If it makes problem for you, please conider using of XSLT template
+          <filename>iwscan-group-same.xslt</filename>, which is distributed in
+          set with <command>iwscan</command>. Command will look like
+        <programlisting>xsltproc --nonet -o <replaceable>OUTFILE</replaceable> /path/to/iwscan-group-same.xslt <replaceable>INFILE</replaceable></programlisting>
+          (usually <filename>iwscan-group-same.xslt</filename> is located in
+          place like <filename>/usr/share/iwscan/</filename> or so, depending
+          of your install <varname>PREFIX</varname>).
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          <command>iwscan</command> knows and decodes only those IEs 
+          (informational extensions) that are known to 
+          <command>iwlist</command>. For now, version of
+          <command>iwlist</command> that are used as basic, 30-pre9,
+          released in 2009, and knows only two IEs:
+          <literal>0xdd</literal> (WPA1) and <literal>0x30</literal> 
+          (WPA2). All other IEs will be printed "as is", in special
+          "<literal>&lt;IE&gt;</literal>" tags (each byte presented by
+          two hexadecimal digits).
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Some tags have "strange" attributes like "<literal>&lt;Frequency
+            fixed='...'&gt;</literal>" or "<literal>&lt;Quality
+            updated='...'&gt;</literal>". Such attributes does not have
+          explicit analogue in <command>iwlist scan</command> output. However,
+          sentences like "<literal>Frequency:2.457 GHz</literal>" or
+          "<literal>Quality=19/70</literal>" includes separator that have
+          special means: ":" corresponds to false (0) value of "strange"
+          attribute, while "=" corresponds to "true" (1) value of this
+          attribute.
+        </para>
+      </listitem>
+    </itemizedlist>
+  </refsect1>
+
+  <refsect1>
+    <title>Typical errors</title>
+
+    <para>
+      Firstly, let's look at the error thar occur at <command>iwscan</command>
+      startup, before the scan begins. Such errors are printed into
+      <literal>stderr</literal> without any XML formatting. After such errors,
+      <command>iwscan</command> immediately exits with non-zero exit code.
+    </para>
+
+    <variablelist>
+      <varlistentry>
+        <term><literal>iwscan: too few arguments for scanning option [to]</literal></term>
+        <term><literal>iwscan: too few arguments for scanning option [essid]</literal></term>
+
+        <listitem>
+          <para>
+            If you specify options like <option>to</option> or
+            <option>essid</option>, do not forget to give them corresponding
+            argument, i.e. <replaceable>FILE</replaceable> or
+            <replaceable>ESSID</replaceable> respectively.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscan: cannot open output file</literal></term>
+
+        <listitem>
+          <para>
+            Usually there is a problem with permissions. Check your credentials
+            (you must have write access to catalog in which you want to place
+            output file). Check is file system mounted read-only.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><literal>iwscan: cannot open IW socket</literal></term>
+
+        <listitem>
+          <para>
+            Check is wireless networking and wireless extensions enabled in
+            your kernel (<literal>CONFIG_WLAN</literal>,
+            <literal>CONFIG_WEXT_*</literal> and so).
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      There we consider only errors that occurs during preparing to scan.
+      Errors that may occur <emphasis>during scan process</emphasis>, 
+      described in
+      <citerefentry>
+        <refentrytitle>iwscan-xml-format</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>, as they are printed in XML format.
+    </para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Examples</title>
+
+    <para>
+      Try to scan on all interfaces and print results to stdout:
+    </para>
+    <programlisting>iwscan</programlisting>
+
+    <para>
+      Try to scan on interface <literal>wlan0</literal> and print results to
+      stdout:
+    </para>
+    <programlisting>iwscan wlan0</programlisting>
+    <para>
+      Try to scan on interface <literal>wlan0</literal> and print results to
+      file <filename>dump.xml</filename>:
+    </para>
+    <programlisting>iwscan wlan0 to dump.xml</programlisting>
+    <para>
+      Try to scan on all interfaces and print results to file
+      <filename>dump.xml</filename>:
+    </para>
+    <programlisting>iwscan all to dump.xml</programlisting>
+
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+    <para>
+      <citerefentry>
+        <refentrytitle>iwscand</refentrytitle>
+        <manvolnum>1</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwscan-xml-format</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwlist</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwspy</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwevent</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iwpriv</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>iw</refentrytitle>
+        <manvolnum>8</manvolnum>
+      </citerefentry>,
+      <citerefentry>
+        <refentrytitle>wireless</refentrytitle>
+        <manvolnum>7</manvolnum>
+      </citerefentry>
+    </para>
+  </refsect1>
+</refentry>
+
+

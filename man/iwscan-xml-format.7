@@ -1,0 +1,268 @@
+'\" t
+.\"     Title: iwscan-xml-format
+.\"    Author: Sergey Ptashnick <0comffdiz@inbox.ru>
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 07/01/2017
+.\"    Manual: iwscan XML format
+.\"    Source: iwscan
+.\"  Language: English
+.\"
+.TH "IWSCAN-XML-FORMAT" "7" "07/01/2017" "iwscan" "iwscan XML format"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+iwscan-xml-format \- brief description of XML format, used by iwscan and iwscand
+.SH "SYNOPSIS"
+.HP \w'\fBiwscan\fR\ 'u
+\fBiwscan\fR [\fIINTERFACE\fR|all\ [essid\ \fIESSID\fR]\ [last]\ [to\ \fIFILE\fR]]
+.SH "DESCRIPTION"
+.PP
+Names of XML tag is mostly self\-descriptive\&. Complete machine\-readable description of syntax is described in
+iwscan\&.xsd, distributed in set with
+\fBiwscan\fR\&. You can validate the syntax of
+\fBiwscan\fR
+output by command like that:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xmllint \-\-nonet \-\-noout \-\-schema /path/to/iwscan\&.xsd \fIFILE\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+(usually
+iwscan\&.xsd
+is located in place like
+/usr/share/iwscan/
+or so, depending of your install
+\fIPREFIX\fR)\&.
+.PP
+Some additional notes:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+If you runs
+\fBiwscan\fR
+for specified interface, e\&.g\&.
+\fBiwscan wlan0\fR, root element of XML will be "<Interface>" tag\&. Otherwise, i\&.e\&. you run
+\fBiwscan all\fR
+or
+\fBiwscand\fR, root element will be "<Scan>" (which are container for "<Interface>" tags)\&. Both have timestamps, but
+<Interface>
+also has additional attributes, such as error flag ("failed") and error text ("error"), and also duration of a scan\&. Keep it in mind when processing their output\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Some tags may repeats two or more times\&. Especially worth noting "<Channel>" (tag with simple content, usually duplicates itself) and "<BitRates>" (tag with complex content, usually each contains only a part of the full list)\&. It is due to specific of
+\fBiwscan\fR, whis simply reads and decodes reply from the kernel in stream manner\&.
+.sp
+If it makes problem for you, please conider using of XSLT template
+iwscan\-group\-same\&.xslt, which is distributed in set with
+\fBiwscan\fR\&. Command will look like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+xsltproc \-\-nonet \-o \fIOUTFILE\fR /path/to/iwscan\-group\-same\&.xslt \fIINFILE\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+(usually
+iwscan\-group\-same\&.xslt
+is located in place like
+/usr/share/iwscan/
+or so, depending of your install
+\fIPREFIX\fR)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Note that
+\fBiwscan\fR/\fBiwscand\fR
+knows and decodes only those IEs (informational extensions) that are known to
+\fBiwlist\fR\&. For now, version of
+\fBiwlist\fR
+that are used as basic, 30\-pre9, released in 2009, and knows only two IEs:
+0xdd
+(WPA1) and
+0x30
+(WPA2)\&. All other IEs will be printed "as is", in special "<IE>" tags (each byte presented by two hexadecimal digits)\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Some tags have "strange" attributes like "<Frequency fixed=\*(Aq\&.\&.\&.\*(Aq>" or "<Quality updated=\*(Aq\&.\&.\&.\*(Aq>"\&. Such attributes does not have explicit analogue in
+\fBiwlist scan\fR
+output\&. However, sentences like "Frequency:2\&.457 GHz" or "Quality=19/70" indludes separator that have special means: ":" corresponds to false (0) value of "strange" attribute, while "=" corresponds to "true" (1) value of this attribute\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Some notes about specifics of
+\fBiwscand\fR\&. When is started, it prints into file two header lines:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+<?xml version="1\&.0" encoding="UTF\-8" ?>
+<Scan>
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+When performing each scan iteration, it prints one
+<Interface>
+tag, which contains results of scan (or which attributes contains error flag and message, see below), trailed by one empty line\&.
+.sp
+When it finishes working, it prints into file closing
+</Scan>
+tag\&.
+.RE
+.SH "ERROR MESSAGES"
+.PP
+Here we consider the most common errors that may occur during scanning\&. Such errors are printed in "error" attribute of "<Interface>" tag\&. In such (error) cases, attribute "failed" (error flag) must be true\&. Please not that scan errors
+\fIdoes not lead\fR
+to premature termination of
+\fBiwscan\fR/\fBiwscand\fR
+or setting non\-zero exit code\&.
+.PP
+Operation not permitted
+.RS 4
+To scan for wireless network, you need root privileges, or, as alternative, you can add
+CAP_NET_ADMIN
+to
+\fBiwscan\fR/\fBiwscand\fR
+binaries\&. Latter can be done with commands like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# setcap cap_net_admin+ep $(which iwscan)
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# setcap cap_net_admin+ep $(which iwscand)
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+under root shell\&. After that, you can simply run this programs as ordinary user\&. Please note that
+\fBmake install\fR
+tries to do this automatically (see
+INSTALL
+for details)\&.
+.RE
+.PP
+Network is down
+.RS 4
+You need to set your wireless network interface into state
+UP\&. This can be done with command like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+# ip link set dev \fIINTERFACE\fR up
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+under root shell\&. If you got an error like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+SIOCSIFFLAGS: No such file or directory
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+you definitely need to install firmware for your wireless card\&. If you do not know how to do this, please use internet search, it is wery powerful thing!
+.RE
+.PP
+Interface does not support scanning
+.RS 4
+Error text is self\-descriptive\&. Your wireless card or driver does not support scanning, or you trying to scan on non\-wireless interface\&. Also such interface may not exist at all (e\&.g\&. in case of confusing with other parameter, like "\fBiwscan to \&.\&.\&.\fR" which leads to an attempt to scan interface named "to")\&.
+.RE
+.SH "SEE ALSO"
+.PP
+
+\fBiwscan\fR(1),
+\fBiwscand\fR(1),
+\fBiwlist\fR(8),
+\fBwireless\fR(7)
+.SH "AUTHOR"
+.PP
+\fBSergey Ptashnick\fR <\&0comffdiz@inbox\&.ru\&>
+.RS 4
+developer of iwscan
+.RE
